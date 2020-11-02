@@ -3,17 +3,19 @@ using ProcGenGame;
 using ProcGen;
 using System.Collections.Generic;
 using System;
+using PeterHan.PLib;
+using PeterHan.PLib.Options;
 
 namespace Neutronium_Cave
 {
     public class Patches
     {
-
         public static class Mod_OnLoad
         {
             public static void OnLoad()
             {
-                Debug.Log("Hello from Neutronium_Cave!");
+                PUtil.InitLibrary(true);
+                POptions.RegisterOptions(typeof(ModOptions));
             }
         }
         
@@ -23,7 +25,6 @@ namespace Neutronium_Cave
         {
             public static void Postfix()
             {
-                // Debug.Log("Init world with neutronium");
                 WorldGen.katairiteElement = WorldGen.unobtaniumElement;
             }
         }
@@ -34,8 +35,16 @@ namespace Neutronium_Cave
         {
             public static void Prefix(Border __instance)
             {
-                if (!__instance.neighbors.n0.node.tags.Contains(WorldGenTags.AtSurface) && 
-                    !__instance.neighbors.n1.node.tags.Contains(WorldGenTags.AtSurface))
+                var options = POptions.ReadSettings<ModOptions>() ?? new ModOptions();
+                if (options.GraniteSpaceBorder && 
+                    (__instance.neighbors.n0.node.tags.Contains(WorldGenTags.ErodePointToWorldTop) ||
+                    __instance.neighbors.n1.node.tags.Contains(WorldGenTags.ErodePointToWorldTop)))
+                {
+#if DEBUG
+                    Debug.Log("GraniteSpaceBorder");
+#endif
+                }
+                else
                 {
                     __instance.element = SettingsCache.borders["impenetrable"];
                 }
@@ -48,64 +57,66 @@ namespace Neutronium_Cave
         {
             static Sim.Cell[] _cells;
             static Chunk _world;
-            static HashSet<int> _borderCells;
+            static bool _useGranite;
+
             static Element unobtaniumElement = ElementLoader.FindElementByHash(SimHashes.Unobtanium);
             static Element katairiteElement = ElementLoader.FindElementByHash(SimHashes.Katairite);
-            static byte katairiteIdx = katairiteElement.idx;
-            static float katairiteTemperature  = katairiteElement.defaultValues.temperature;
-            static float katairiteMass = katairiteElement.defaultValues.mass;
+            static Element graniteElement = ElementLoader.FindElementByHash(SimHashes.Granite);
+
+            static ModOptions options;
 
             public static void Prefix(
                 Sim.Cell[] cells,
                 Chunk world,
                 SeededRandom rnd,
-                HashSet<int> borderCells,
-                WorldGen.OfflineCallbackFunction updateProgressFn)
+                HashSet<int> borderCells)
             {
                 _cells = cells;
                 _world = world;
-                _borderCells = borderCells;
             }
 
             public static void Postfix(WorldGen __instance)
             {
-                Debug.Log("I execute after WorldGen.DrawWorldBorder!");
+                options = POptions.ReadSettings<ModOptions>() ?? new ModOptions();
 
                 foreach (TerrainCell overworldCell in __instance.OverworldCells)
                 {
                     SubWorld subWorld = __instance.Settings.GetSubWorld(overworldCell.node.type);
                     if (subWorld != null)
                     {
-                        //subWorld.
                         var x = (int)Math.Round(overworldCell.node.position.x);
                         var y = (int)Math.Round(overworldCell.node.position.y);
-                        // Debug.Log("----");
-                        Debug.Log("Node: " + overworldCell.node.type + " at " + x + "|" + y + " ("+ overworldCell.node.tags.ToString() + ")");
-
+#if DEBUG
+                        Debug.Log("Node: " + overworldCell.node.type + " at " + x + "|" + y + " (" + overworldCell.node.tags.ToString() + ")");
+#endif
                         var borderTop = FindNextBorderCell(x, y, 0, 1);
-                        if (overworldCell.poly.PointInPolygon(Grid.CellToPos(borderTop))) ReplaceVerticalBorderCells(borderTop, true);
-
                         var borderRight = FindNextBorderCell(x, y, 1, 0);
-                        if (overworldCell.poly.PointInPolygon(Grid.CellToPos(borderRight))) ReplaceHorizontalBorderCells(borderRight, true);
-                        /*
                         var borderBottom = FindNextBorderCell(x, y, 0, -1);
-                        ReplaceVerticalBorderCells(borderBottom, false);
-
                         var borderLeft = FindNextBorderCell(x, y, -1, 0);
-                        ReplaceHorizontalBorderCells(borderLeft, false);
-                        */
+
+                        _useGranite = overworldCell.node.tags.Contains(WorldGenTags.StartWorld);
+
+                        ReplaceVerticalBorderCells(overworldCell, borderTop, true);
+                        ReplaceHorizontalBorderCells(overworldCell, borderRight, true);
+
+                        if (options.MoreEntrances)
+                        {
+                            ReplaceVerticalBorderCells(overworldCell, borderBottom, false);
+                            ReplaceHorizontalBorderCells(overworldCell, borderLeft, false);
+                        }
                     }
                 }
 
                 // cleanup
                 _cells = null;
                 _world = null;
-                _borderCells = null;
             }
 
-            private static void ReplaceVerticalBorderCells(int cell, bool inc)
+            private static void ReplaceVerticalBorderCells(TerrainCell overworldCell, int cell, bool inc)
             {
                 if (cell == -1) return;
+                if (!overworldCell.poly.PointInPolygon(Grid.CellToPos(cell))) return;
+
                 var position = Grid.CellToXY(cell);
                 var x = position.x;
                 var y = position.y;
@@ -114,10 +125,21 @@ namespace Neutronium_Cave
                 while (replace && Math.Abs(y - position.y) < 5)
                 {
                     // center
-                    replace = ReplaceBorderWithAbysalite(cell);
+                    replace = ReplaceElement(cell);
                     // left + right
-                   // ReplaceBorderWithAbysalite(Grid.XYToCell(x - 1, y));
-                    ReplaceBorderWithAbysalite(Grid.XYToCell(x + 1, y));
+                    ReplaceElement(Grid.XYToCell(x + 1, y));
+                    if (options.GapWidth >= 3)
+                    {
+                        ReplaceElement(Grid.XYToCell(x - 1, y));
+                    }
+                    if (options.GapWidth >= 4)
+                    {
+                        ReplaceElement(Grid.XYToCell(x + 2, y));
+                    }
+                    if (options.GapWidth >= 5)
+                    {
+                        ReplaceElement(Grid.XYToCell(x - 2, y));
+                    }
                     // next
                     y = inc ? y + 1 : y - 1;
                     cell = Grid.XYToCell(x, y);
@@ -128,15 +150,31 @@ namespace Neutronium_Cave
                 var max = Math.Max(y, position.y);
                 if (inc) max--;
                 else min++;
-              //  ReplaceBorderWithAbysalite(Grid.XYToCell(x - 1, min - 1));
-                ReplaceBorderWithAbysalite(Grid.XYToCell(x + 1, min - 1));
-              //  ReplaceBorderWithAbysalite(Grid.XYToCell(x - 1, max + 1));
-                ReplaceBorderWithAbysalite(Grid.XYToCell(x + 1, max + 1));
+                ReplaceElement(Grid.XYToCell(x + 1, min - 1));
+                ReplaceElement(Grid.XYToCell(x + 1, max + 1));
+
+                if (options.GapWidth >= 3)
+                {
+                    ReplaceElement(Grid.XYToCell(x - 1, min - 1));
+                    ReplaceElement(Grid.XYToCell(x - 1, max + 1));
+                }
+                if (options.GapWidth >= 4)
+                {
+                    ReplaceElement(Grid.XYToCell(x + 2, min - 1));
+                    ReplaceElement(Grid.XYToCell(x + 2, max + 1));
+                }
+                if (options.GapWidth >= 5)
+                {
+                    ReplaceElement(Grid.XYToCell(x - 2, min - 1));
+                    ReplaceElement(Grid.XYToCell(x - 2, max + 1));
+                }
             }
 
-            private static void ReplaceHorizontalBorderCells(int cell, bool inc)
+            private static void ReplaceHorizontalBorderCells(TerrainCell overworldCell, int cell, bool inc)
             {
                 if (cell == -1) return;
+                if (!overworldCell.poly.PointInPolygon(Grid.CellToPos(cell))) return;
+
                 var position = Grid.CellToXY(cell);
                 var x = position.x;
                 var y = position.y;
@@ -145,10 +183,21 @@ namespace Neutronium_Cave
                 while (replace && Math.Abs(x - position.x) < 5)
                 {
                     // center
-                    replace = ReplaceBorderWithAbysalite(cell);
+                    replace = ReplaceElement(cell);
                     // upper + lower
-                  //  ReplaceBorderWithAbysalite(Grid.XYToCell(x, y - 1));
-                    ReplaceBorderWithAbysalite(Grid.XYToCell(x, y + 1));
+                    ReplaceElement(Grid.XYToCell(x, y + 1));
+                    if (options.GapWidth >= 3)
+                    {
+                        ReplaceElement(Grid.XYToCell(x, y - 1));
+                    }
+                    if (options.GapWidth >= 4)
+                    {
+                        ReplaceElement(Grid.XYToCell(x, y + 2));
+                    }
+                    if (options.GapWidth >= 5)
+                    {
+                        ReplaceElement(Grid.XYToCell(x, y - 2));
+                    }
                     // next
                     x = inc ? x + 1 : x - 1;
                     cell = Grid.XYToCell(x, y);
@@ -159,19 +208,40 @@ namespace Neutronium_Cave
                 var max = Math.Max(x, position.x);
                 if (inc) max--;
                 else min++;
-              //  ReplaceBorderWithAbysalite(Grid.XYToCell(min - 1, y - 1));
-                ReplaceBorderWithAbysalite(Grid.XYToCell(min - 1, y + 1));
-              //  ReplaceBorderWithAbysalite(Grid.XYToCell(max + 1, y - 1));
-                ReplaceBorderWithAbysalite(Grid.XYToCell(max + 1, y + 1));
+                ReplaceElement(Grid.XYToCell(min - 1, y + 1));
+                ReplaceElement(Grid.XYToCell(max + 1, y + 1));
+
+                if (options.GapWidth >= 3)
+                {
+                    ReplaceElement(Grid.XYToCell(min - 1, y - 1));
+                    ReplaceElement(Grid.XYToCell(max + 1, y - 1));
+                }
+                if (options.GapWidth >= 4)
+                {
+                    ReplaceElement(Grid.XYToCell(min - 1, y + 2));
+                    ReplaceElement(Grid.XYToCell(max + 1, y + 2));
+                }
+                if (options.GapWidth >= 5)
+                {
+                    ReplaceElement(Grid.XYToCell(min - 1, y - 2));
+                    ReplaceElement(Grid.XYToCell(max + 1, y - 2));
+                }
             }
 
-            private static bool ReplaceBorderWithAbysalite(int cell)
+            private static bool ReplaceElement(int cell)
             {
                 try
                 {
                     if (_cells[cell].elementIdx == unobtaniumElement.idx)
                     {
-                        _cells[cell].SetValues(katairiteIdx, katairiteTemperature, katairiteMass);
+                        if (_useGranite && options.GraniteStartBiomeBorder)
+                        {
+                            _cells[cell].SetValues(graniteElement.idx, graniteElement.defaultValues.temperature, graniteElement.defaultValues.mass);
+                        }
+                        else
+                        {
+                            _cells[cell].SetValues(katairiteElement.idx, katairiteElement.defaultValues.temperature, katairiteElement.defaultValues.mass);
+                        }                        
                         return true;
                     }
                 }
