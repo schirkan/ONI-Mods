@@ -10,6 +10,8 @@ namespace Neutronium_Cave
 {
     public class Patches
     {
+        public static ModOptions Options;
+
         public static class Mod_OnLoad
         {
             public static void OnLoad()
@@ -23,9 +25,10 @@ namespace Neutronium_Cave
         [HarmonyPatch("SetupDefaultElements")]
         public class WorldGen_SetupDefaultElements_Patch
         {
-            public static void Postfix()
+            public static void Postfix(WorldGen __instance)
             {
-                WorldGen.katairiteElement = WorldGen.unobtaniumElement;
+                // init Options
+                Options = POptions.ReadSettings<ModOptions>() ?? new ModOptions();
             }
         }
 
@@ -35,13 +38,14 @@ namespace Neutronium_Cave
         {
             public static void Prefix(Border __instance)
             {
-                var options = POptions.ReadSettings<ModOptions>() ?? new ModOptions();
-                if (options.GraniteSpaceBorder && 
+                if (!Options.Enabled) return;
+
+                if (Options.DefaultSpaceBorder && 
                     (__instance.neighbors.n0.node.tags.Contains(WorldGenTags.ErodePointToWorldTop) ||
                     __instance.neighbors.n1.node.tags.Contains(WorldGenTags.ErodePointToWorldTop)))
                 {
 #if DEBUG
-                    Debug.Log("GraniteSpaceBorder");
+                    Debug.Log("DefaultSpaceBorder");
 #endif
                 }
                 else
@@ -63,8 +67,6 @@ namespace Neutronium_Cave
             static Element katairiteElement = ElementLoader.FindElementByHash(SimHashes.Katairite);
             static Element graniteElement = ElementLoader.FindElementByHash(SimHashes.Granite);
 
-            static ModOptions options;
-
             public static void Prefix(
                 Sim.Cell[] cells,
                 Chunk world,
@@ -77,7 +79,7 @@ namespace Neutronium_Cave
 
             public static void Postfix(WorldGen __instance)
             {
-                options = POptions.ReadSettings<ModOptions>() ?? new ModOptions();
+                if (!Options.Enabled) return;
 
                 foreach (TerrainCell overworldCell in __instance.OverworldCells)
                 {
@@ -99,7 +101,7 @@ namespace Neutronium_Cave
                         ReplaceVerticalBorderCells(overworldCell, borderTop, true);
                         ReplaceHorizontalBorderCells(overworldCell, borderRight, true);
 
-                        if (options.MoreEntrances)
+                        if (Options.MoreEntrances)
                         {
                             ReplaceVerticalBorderCells(overworldCell, borderBottom, false);
                             ReplaceHorizontalBorderCells(overworldCell, borderLeft, false);
@@ -128,15 +130,15 @@ namespace Neutronium_Cave
                     replace = ReplaceElement(cell);
                     // left + right
                     ReplaceElement(Grid.XYToCell(x + 1, y));
-                    if (options.GapWidth >= 3)
+                    if (Options.GapWidth >= 3)
                     {
                         ReplaceElement(Grid.XYToCell(x - 1, y));
                     }
-                    if (options.GapWidth >= 4)
+                    if (Options.GapWidth >= 4)
                     {
                         ReplaceElement(Grid.XYToCell(x + 2, y));
                     }
-                    if (options.GapWidth >= 5)
+                    if (Options.GapWidth >= 5)
                     {
                         ReplaceElement(Grid.XYToCell(x - 2, y));
                     }
@@ -153,17 +155,17 @@ namespace Neutronium_Cave
                 ReplaceElement(Grid.XYToCell(x + 1, min - 1));
                 ReplaceElement(Grid.XYToCell(x + 1, max + 1));
 
-                if (options.GapWidth >= 3)
+                if (Options.GapWidth >= 3)
                 {
                     ReplaceElement(Grid.XYToCell(x - 1, min - 1));
                     ReplaceElement(Grid.XYToCell(x - 1, max + 1));
                 }
-                if (options.GapWidth >= 4)
+                if (Options.GapWidth >= 4)
                 {
                     ReplaceElement(Grid.XYToCell(x + 2, min - 1));
                     ReplaceElement(Grid.XYToCell(x + 2, max + 1));
                 }
-                if (options.GapWidth >= 5)
+                if (Options.GapWidth >= 5)
                 {
                     ReplaceElement(Grid.XYToCell(x - 2, min - 1));
                     ReplaceElement(Grid.XYToCell(x - 2, max + 1));
@@ -186,15 +188,15 @@ namespace Neutronium_Cave
                     replace = ReplaceElement(cell);
                     // upper + lower
                     ReplaceElement(Grid.XYToCell(x, y + 1));
-                    if (options.GapWidth >= 3)
+                    if (Options.GapWidth >= 3)
                     {
                         ReplaceElement(Grid.XYToCell(x, y - 1));
                     }
-                    if (options.GapWidth >= 4)
+                    if (Options.GapWidth >= 4)
                     {
                         ReplaceElement(Grid.XYToCell(x, y + 2));
                     }
-                    if (options.GapWidth >= 5)
+                    if (Options.GapWidth >= 5)
                     {
                         ReplaceElement(Grid.XYToCell(x, y - 2));
                     }
@@ -211,17 +213,17 @@ namespace Neutronium_Cave
                 ReplaceElement(Grid.XYToCell(min - 1, y + 1));
                 ReplaceElement(Grid.XYToCell(max + 1, y + 1));
 
-                if (options.GapWidth >= 3)
+                if (Options.GapWidth >= 3)
                 {
                     ReplaceElement(Grid.XYToCell(min - 1, y - 1));
                     ReplaceElement(Grid.XYToCell(max + 1, y - 1));
                 }
-                if (options.GapWidth >= 4)
+                if (Options.GapWidth >= 4)
                 {
                     ReplaceElement(Grid.XYToCell(min - 1, y + 2));
                     ReplaceElement(Grid.XYToCell(max + 1, y + 2));
                 }
-                if (options.GapWidth >= 5)
+                if (Options.GapWidth >= 5)
                 {
                     ReplaceElement(Grid.XYToCell(min - 1, y - 2));
                     ReplaceElement(Grid.XYToCell(max + 1, y - 2));
@@ -234,7 +236,7 @@ namespace Neutronium_Cave
                 {
                     if (_cells[cell].elementIdx == unobtaniumElement.idx)
                     {
-                        if (_useGranite && options.GraniteStartBiomeBorder)
+                        if (_useGranite && Options.GraniteStartBiomeBorder)
                         {
                             _cells[cell].SetValues(graniteElement.idx, graniteElement.defaultValues.temperature, graniteElement.defaultValues.mass);
                         }

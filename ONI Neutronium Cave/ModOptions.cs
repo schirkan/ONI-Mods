@@ -8,28 +8,33 @@ namespace Neutronium_Cave
     public class ModOptions
     {
         [JsonProperty]
+        [Option("Enabled", "Enable or disable this mod temporarily. (Default: on)")]
+        public bool Enabled { get; set; }
+
+        [JsonProperty]
         [Option("Start biome with granite gaps", "Gaps in start biome borders are made of granite. (Default: on)")]
         public bool GraniteStartBiomeBorder { get; set; }
 
         [JsonProperty]
-        [Option("Space biome with granite border", "Space biome borders are made of granite. (Default: off)")]
-        public bool GraniteSpaceBorder { get; set; }
+        [Option("Space biome with default border", "Space biome borders are made of the default border material. (Default: off)")]
+        public bool DefaultSpaceBorder { get; set; }
 
         [JsonProperty]
         [Option("More gaps", "Double the amount of gaps in biome borders. (Default: off)")]
         public bool MoreEntrances { get; set; }
 
         [JsonProperty]
-        [Option("Gap size", "Set the width of gaps in biome borders. (Default: 2)")]
+        [Option("Gap size", "Set the width of gaps in biome borders. (Default: 3)")]
         [Limit(2, 5)]
         public int GapWidth { get; set; }
 
         public ModOptions()
         {
+            Enabled = true;
             GraniteStartBiomeBorder = true;
-            GraniteSpaceBorder = false;
+            DefaultSpaceBorder = false;
             MoreEntrances = false;
-            GapWidth = 2;
+            GapWidth = 3;
         }
     }
 }
