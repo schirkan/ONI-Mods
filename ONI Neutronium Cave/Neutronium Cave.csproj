@@ -73,7 +73,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="build\archived_versions\vanilla_449460\mod_info.yaml" />
+    <None Include="build\mod_info.yaml" />
     <None Include="ILMerge.props" />
+    <Content Include="build\archived_versions\vanilla_449460\Neutronium Cave.dll" />
+    <Content Include="build\Neutronium Cave.dll" />
     <Content Include="mod_info.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

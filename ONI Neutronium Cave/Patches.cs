@@ -89,7 +89,7 @@ namespace Neutronium_Cave
                         var x = (int)Math.Round(overworldCell.node.position.x);
                         var y = (int)Math.Round(overworldCell.node.position.y);
 #if DEBUG
-                        Debug.Log("Node: " + overworldCell.node.type + " at " + x + "|" + y + " (" + overworldCell.node.tags.ToString() + ")");
+                        Debug.Log("Node: " + overworldCell.node.type + " at " + x + "|" + y);
 #endif
                         var borderTop = FindNextBorderCell(x, y, 0, 1);
                         var borderRight = FindNextBorderCell(x, y, 1, 0);
