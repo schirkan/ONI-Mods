@@ -1,9 +1,9 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using ProcGenGame;
 using ProcGen;
 using System.Collections.Generic;
 using System;
-using PeterHan.PLib;
+using PeterHan.PLib.Core;
 using PeterHan.PLib.Options;
 
 namespace Neutronium_Cave
@@ -12,12 +12,14 @@ namespace Neutronium_Cave
     {
         public static ModOptions Options;
 
-        public static class Mod_OnLoad
+        public  class Mod_OnLoad : KMod.UserMod2
         {
-            public static void OnLoad()
+            public override void OnLoad(Harmony harmony)
             {
+                base.OnLoad(harmony);
                 PUtil.InitLibrary(true);
-                POptions.RegisterOptions(typeof(ModOptions));
+                var options = new POptions();
+                options.RegisterOptions(this, typeof(ModOptions));
             }
         }
         

@@ -1,10 +1,10 @@
 ﻿using Newtonsoft.Json;
-using PeterHan.PLib;
+using PeterHan.PLib.Options;
 
 namespace Neutronium_Cave
 {
     [JsonObject(MemberSerialization.OptIn)]
-    [ModInfo("Neutronium Cave", "https://github.com/schirkan/ONI-Mods")] // , "TODO"
+    [ModInfo("https://github.com/schirkan/ONI-Mods")] // , "TODO"
     public class ModOptions
     {
         [JsonProperty]
