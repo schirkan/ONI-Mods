@@ -53,8 +53,8 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="PLib, Version=4.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PLib.4.5.0\lib\net471\PLib.dll</HintPath>
+    <Reference Include="PLib, Version=4.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PLib.4.9.0\lib\net471\PLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
@@ -75,6 +75,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="build\archived_versions\expansion1_id_449549\mod_info.yaml" />
+    <None Include="build\archived_versions\expansion1_id_481873\mod_info.yaml" />
     <None Include="build\archived_versions\vanilla_449460\mod_info.yaml" />
     <None Include="build\mod.yaml" />
     <None Include="build\mod_info.yaml" />

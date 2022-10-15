@@ -238,18 +238,28 @@ namespace Neutronium_Cave
                 {
                     if (_cells[cell].elementIdx == unobtaniumElement.idx)
                     {
+                        ushort id = katairiteElement.idx;
+                        float temperature = katairiteElement.defaultValues.temperature;
+                        float mass = katairiteElement.defaultValues.mass;
+
                         if (_useGranite && Options.GraniteStartBiomeBorder)
                         {
-                            _cells[cell].SetValues(graniteElement.idx, graniteElement.defaultValues.temperature, graniteElement.defaultValues.mass);
+                            id = graniteElement.idx;
+                            temperature = graniteElement.defaultValues.temperature;
+                            mass = graniteElement.defaultValues.mass;
                         }
-                        else
-                        {
-                            _cells[cell].SetValues(katairiteElement.idx, katairiteElement.defaultValues.temperature, katairiteElement.defaultValues.mass);
-                        }                        
+
+                        _cells[cell].SetValues(id, temperature, mass);
+
                         return true;
                     }
                 }
-                catch (Exception){}
+                catch (Exception ex)
+                {
+#if DEBUG
+                    Debug.Log("ReplaceElement: " + ex.Message);
+#endif
+                }
                 return false;
             }
 
